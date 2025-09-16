@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Login</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(to right, #dfe9f3, #ffffff);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.6)), 
+                  url('/static/secure1.jpg');
+            background-size: cover;
+            background-position:center;
+        }
+        .login-box {
+            background-color: #52525234;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 5px 5px 10px rgba(205, 184, 184, 0.145);
+            width: 100%;
+            max-width: 400px;
+            backdrop-filter: blur(6px);
+        }
+        .login-box h2 {
+            text-align: center;
+            color: #85a8ca;
+            margin-bottom: 10px;
+        }
+        .login-box p {
+            text-align: center;
+            font-size: 0.95rem;
+            color: #e7dcdc;
+        }
+        .login-box input[type="text"],
+        .login-box input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            margin-top: 10px;
+            border: 1px solid #bbb;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .login-box button {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background-color: #3498db;
+            border: none;
+            color: white;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .login-box button:hover {
+            background-color: #2980b9;
+        }
+        .login-box .register-link {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+        .login-box .register-link a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        .login-box .register-link a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            color: red;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2>Sign In to Your Account</h2>
+        <p>Manage your parking spaces effortlessly</p>
+
+        <form method="POST" action="/login">
+            <input type="text" name="username" placeholder="Enter your username (admin@123 for admin)" required>
+            <input type="password" name="password" placeholder="Enter your password" required>
+            <button type="submit">Log In</button>
+        </form>
+
+        {% if error %}
+            <div class="error-message">{{ error }}</div>
+        {% endif %}
+
+        <div class="register-link">
+            <p>New user? <a href="/register">Create an account</a></p>
+        </div>
+    </div>
+</body>
+</html>

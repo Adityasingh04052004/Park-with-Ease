@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Dashboard | Park with Ease</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap & Fonts -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      background: linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('/static/secure1.jpg');
+      font-family: 'Poppins', sans-serif;
+      color: #333;
+      margin: 0; padding-bottom: 60px;
+    }
+    .custom-navbar { background-color: #273746; padding: 1rem 2rem; color: white; }
+    .custom-navbar .brand { font-weight: 600; font-size: 1.4rem; }
+    .card-header { background-color: #2c3e50; color: white; }
+    .footer-bar {
+      background: #2c3e50; color: white; text-align: center; padding: 1rem;
+      position: fixed; bottom: 0; left: 0; right: 0;
+    }
+    .table-hover tbody tr:hover { background-color: rgba(0,0,0,0.03); }
+  </style>
+</head>
+<body>
+
+<!-- Top Navigation -->
+<div class="custom-navbar d-flex justify-content-between align-items-center">
+  <div class="brand">🚗 Park with Ease — User</div>
+  <a href="/logout" class="btn btn-sm btn-outline-light">Logout</a>
+</div>
+
+<!-- Dashboard Container -->
+<div class="container mt-4">
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-4">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <h3 class="text-center mb-4">👋 Hello, {{ user.username }}!</h3>
+
+
+  <!-- Parking Lots -->
+  <div class="card shadow mb-5">
+    <div class="card-header"><h5 class="mb-0">🅿 Find a Parking Spot</h5></div>
+    <div class="card-body">
+      {% if lots %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>#</th><th>📍 Location</th><th>🏢 Address</th>
+                <th>📮 Pin</th><th>💰 Rate (₹/min)</th>
+                <th>🟢 Spots Free</th><th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for lot in lots %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ lot.prime_location_name }}</td>
+                <td>{{ lot.address }}</td>
+                <td>{{ lot.pin_code }}</td>
+                <td>{{ lot.price }}</td>
+                <td>{{ lot.available_spots }}</td>
+                <td>
+                  {% if lot.available_spots > 0 %}
+                    <a href="{{ url_for('book_spot', lot_id=lot.id) }}" class="btn btn-sm btn-primary">📥 Book</a>
+                  {% else %}
+                    <button class="btn btn-sm btn-secondary" disabled>❌ Full</button>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted">🚫 No parking lots listed.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Reservation History -->
+  <div class="card shadow mb-5">
+    <div class="card-header"><h5 class="mb-0">📜 Your Parking Activity</h5></div>
+    <div class="card-body">
+      {% if reservations %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th>#</th><th>📌 Lot</th><th>🚘 Vehicle</th>
+                <th>⏰ Start</th><th>🏁 End</th><th>🔧 Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in reservations %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ r.spot.lot.prime_location_name if r.spot and r.spot.lot else '❓ Unknown' }}</td>
+                <td>{{ user.vehicle_number }}</td>
+                <td>{{ r.parking_timestamp.strftime('%d %b %Y %H:%M') }}</td>
+                <td>{{ r.leaving_timestamp.strftime('%d %b %Y %H:%M') if r.leaving_timestamp else '⏳ Ongoing' }}</td>
+                <td>
+                  {% if r.leaving_timestamp %}
+                    <span class="badge bg-success">✅ Released</span>
+                  {% else %}
+                    <a href="{{ url_for('release_spot', spot_id=r.spot.id) }}" class="btn btn-sm btn-warning">🔓 Release</a>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-muted">ℹ No bookings yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Parking Summary Chart -->
+  <div class="card shadow mt-5">
+    <div class="card-header"><h5 class="mb-0">📊 Parking Summary</h5></div>
+    <div class="card-body">
+      <canvas id="userSummaryChart" style="max-width: 300px; max-height: 300px;"></canvas>
+
+    </div>
+  </div>
+
+  <!-- Chart Data (JSON) -->
+  <script id="user-summary-data" type="application/json">
+    {
+      "completed": {{ user_completed | default(0) | int }},
+      "ongoing": {{ user_ongoing | default(0) | int }}
+    }
+  </script>
+</div>
+
+<!-- Chart Script -->
+<script>
+  const userSummaryData = JSON.parse(document.getElementById('user-summary-data').textContent);
+  const userCtx = document.getElementById('userSummaryChart').getContext('2d');
+  new Chart(userCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Completed Bookings', 'Ongoing Bookings'],
+      datasets: [{
+        data: [userSummaryData.completed, userSummaryData.ongoing],
+        backgroundColor: ['#28a745', '#ffc107'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { title: { display: true, text: 'Your Booking Status' } }
+    }
+  });
+</script>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Footer -->
+<div class="footer-bar mt-5">© 2025 Park with Ease — User Panel</div>
+</body>
+</html>
